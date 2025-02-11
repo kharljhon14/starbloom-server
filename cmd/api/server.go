@@ -5,8 +5,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 type Config struct {
@@ -19,13 +17,15 @@ type Application struct {
 	Logger *log.Logger
 }
 
-func (app *Application) Mount() http.Handler {
-	router := httprouter.New()
+func (app *Application) Mount() *http.ServeMux {
+	mux := http.NewServeMux()
 
-	return router
+	mux.HandleFunc("GET /api/v1/health", app.healthCheckHandler)
+
+	return mux
 }
 
-func (app *Application) Serve(router http.Handler) error {
+func (app *Application) Serve(router *http.ServeMux) error {
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.Config.Port),
 		Handler:      router,
