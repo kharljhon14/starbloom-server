@@ -20,15 +20,15 @@ type Application struct {
 	Logger *jsonlog.Logger
 }
 
-func (app *Application) Mount() *http.ServeMux {
+func (app *Application) Mount() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v1/health", app.healthCheckHandler)
 
-	return mux
+	return app.logRequest(mux)
 }
 
-func (app *Application) Serve(router *http.ServeMux) error {
+func (app *Application) Serve(router http.Handler) error {
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.Config.Port),
 		Handler:      router,
