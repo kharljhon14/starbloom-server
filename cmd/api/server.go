@@ -2,10 +2,13 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/kharljhon14/starbloom-server/internal/jsonlog"
 )
+
+const version = "1.0.0"
 
 type Config struct {
 	Port int
@@ -14,7 +17,7 @@ type Config struct {
 
 type Application struct {
 	Config Config
-	Logger *log.Logger
+	Logger *jsonlog.Logger
 }
 
 func (app *Application) Mount() *http.ServeMux {
@@ -34,6 +37,10 @@ func (app *Application) Serve(router *http.ServeMux) error {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	app.Logger.Printf("starting server: %s\n", srv.Addr)
+	app.Logger.PrintInfo("starting server", map[string]string{
+		"addr": srv.Addr,
+		"env":  app.Config.Env,
+	})
+
 	return srv.ListenAndServe()
 }

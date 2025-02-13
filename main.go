@@ -2,13 +2,11 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
 	"github.com/kharljhon14/starbloom-server/cmd/api"
+	"github.com/kharljhon14/starbloom-server/internal/jsonlog"
 )
-
-const version = "1.0.0"
 
 func main() {
 	var cfg api.Config
@@ -19,7 +17,7 @@ func main() {
 
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
 	app := &api.Application{
 		Config: cfg,
@@ -28,6 +26,8 @@ func main() {
 
 	mux := app.Mount()
 
-	logger.Fatalln(app.Serve(mux))
-
+	err := app.Serve(mux)
+	if err != nil {
+		logger.PrintFatal(err, nil)
+	}
 }

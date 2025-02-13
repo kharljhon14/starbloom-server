@@ -85,5 +85,4 @@ func (app *Application) readJSON(
 	}
 
 	return nil
-
 }
