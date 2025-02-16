@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kharljhon14/starbloom-server/internal/data"
 	"github.com/kharljhon14/starbloom-server/internal/jsonlog"
 )
 
@@ -13,11 +14,15 @@ const version = "1.0.0"
 type Config struct {
 	Port int
 	Env  string
+	Db   struct {
+		Dsn string
+	}
 }
 
 type Application struct {
 	Config Config
 	Logger *jsonlog.Logger
+	Models data.Models
 }
 
 func (app *Application) Mount() http.Handler {
