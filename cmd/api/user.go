@@ -1,9 +1,11 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/kharljhon14/starbloom-server/internal/data"
+	"github.com/kharljhon14/starbloom-server/internal/validator"
 )
 
 func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -16,7 +18,7 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 	err := app.readJSON(w, r, &input)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		app.badRequestErrorResponse(w, r, err)
 		return
 	}
 
@@ -33,10 +35,28 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	v := validator.New()
+
+	if data.ValidateUser(v, user); !v.Valid() {
+		app.validationErrorResponse(w, r, v.Errors)
+		return
+	}
+
 	err = app.Models.Users.Insert(user)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
+		switch {
+		case errors.Is(err, data.ErrDuplicateEmail):
+			v.AddError("email", "a user with this email already exists")
+			app.validationErrorResponse(w, r, v.Errors)
+			return
+		case errors.Is(err, data.ErrDuplicateUsername):
+			v.AddError("username", "username already taken")
+			app.validationErrorResponse(w, r, v.Errors)
+			return
+		default:
+			app.serverErrorResponse(w, r, err)
+			return
+		}
 	}
 
 	err = app.writeJSON(w, http.StatusCreated, envelope{"user": user}, nil)
