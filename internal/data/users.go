@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -95,6 +96,8 @@ func (m UserModel) GetUser(username string) (*User, error) {
 		&user.CreatedAt,
 	)
 	if err != nil {
+		var pgErr pgconn.PgError
+		fmt.Println(pgErr.Code)
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			return nil, ErrNoRecordFound

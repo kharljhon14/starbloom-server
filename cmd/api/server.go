@@ -31,6 +31,7 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("GET /api/v1/health", app.healthCheckHandler)
 
 	mux.HandleFunc("POST /api/v1/login", app.createUserHandler)
+	mux.HandleFunc("GET /api/v1/users/{username}", app.getUserhandler)
 
 	return app.logRequest(mux)
 }

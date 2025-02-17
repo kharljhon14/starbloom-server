@@ -38,10 +38,27 @@ func (app *Application) serverErrorResponse(
 	app.errorResponse(w, r, http.StatusInternalServerError, message)
 }
 
-func (app *Application) badRequestErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+func (app *Application) notFoundErrorResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	err error,
+) {
+	message := "could not find the requested resource"
+	app.errorResponse(w, r, http.StatusNotFound, message)
+}
+
+func (app *Application) badRequestErrorResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	err error,
+) {
 	app.errorResponse(w, r, http.StatusBadRequest, err)
 }
 
-func (app *Application) validationErrorResponse(w http.ResponseWriter, r *http.Request, err map[string]string) {
+func (app *Application) validationErrorResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	err map[string]string,
+) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, err)
 }

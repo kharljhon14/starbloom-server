@@ -64,3 +64,23 @@ func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *Application) getUserhandler(w http.ResponseWriter, r *http.Request) {
+	username := r.PathValue("username")
+
+	user, err := app.Models.Users.GetUser(username)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r, err)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
