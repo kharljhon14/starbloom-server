@@ -52,7 +52,15 @@ func (app *Application) badRequestErrorResponse(
 	r *http.Request,
 	err error,
 ) {
-	app.errorResponse(w, r, http.StatusBadRequest, err)
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+}
+
+func (app *Application) invalidCredentialsErrorResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	message := "invalid credentials"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
 
 func (app *Application) validationErrorResponse(

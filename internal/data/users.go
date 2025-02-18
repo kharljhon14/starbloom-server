@@ -77,7 +77,7 @@ func (m UserModel) Insert(user *User) error {
 
 func (m UserModel) GetUser(username string) (*User, error) {
 	query := `
-	SELECT id, username, email, first_name, last_name, created_at
+	SELECT id, username, email, hashed_password, first_name, last_name, created_at
 	FROM users
 	WHERE username = $1
 	`
@@ -91,6 +91,7 @@ func (m UserModel) GetUser(username string) (*User, error) {
 		&user.ID,
 		&user.Username,
 		&user.Email,
+		&user.Password.hash,
 		&user.FirstName,
 		&user.LastName,
 		&user.CreatedAt,
@@ -119,6 +120,20 @@ func (p *password) Set(plainTextPassword string) error {
 	p.hash = hash
 
 	return nil
+}
+
+func (p *password) Matches(plainTextPassword string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plainTextPassword))
+	if err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 func ValidateUser(v *validator.Validator, user *User) {
