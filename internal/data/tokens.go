@@ -57,7 +57,7 @@ type TokenModel struct {
 	DB *pgx.Conn
 }
 
-func (m *TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, error) {
+func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, error) {
 	token, err := generateToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (m *TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token,
 	return token, err
 }
 
-func (m *TokenModel) insert(token *Token) error {
+func (m TokenModel) insert(token *Token) error {
 	query := `
 	INSERT INTO tokens (hash, user_id, expired_at, scope)
 	VALUES ($1, $2, $3, $4)
@@ -92,7 +92,7 @@ func (m *TokenModel) insert(token *Token) error {
 	return err
 }
 
-func (m *TokenModel) DeleteAllForUser(scope string, userId int64) error {
+func (m TokenModel) DeleteAllForUser(scope string, userId int64) error {
 	query := `
 	DELETE FROM tokens
 	WHERE scope = $1 AND user_id = $2
