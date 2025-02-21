@@ -34,7 +34,7 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("POST /api/v1/login", app.createAuthenticationTokenHandler)
 	mux.HandleFunc("GET /api/v1/users/{username}", app.getUserhandler)
 
-	return app.logRequest(mux)
+	return app.recoverPanic(app.logRequest(mux))
 }
 
 func (app *Application) Serve(router http.Handler) error {
