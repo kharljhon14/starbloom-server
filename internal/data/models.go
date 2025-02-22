@@ -5,13 +5,15 @@ import (
 )
 
 type Models struct {
-	Users  UserModel
-	Tokens TokenModel
+	Users   UserModel
+	Tokens  TokenModel
+	Follows FollowsModel
 }
 
 func NewModels(db *pgx.Conn) Models {
 	return Models{
-		Users:  UserModel{DB: db},
-		Tokens: TokenModel{DB: db},
+		Users:   UserModel{DB: db},
+		Tokens:  TokenModel{DB: db},
+		Follows: FollowsModel{DB: db},
 	}
 }

@@ -17,22 +17,28 @@ type FollowsModel struct {
 	DB *pgx.Conn
 }
 
-func (f FollowsModel) Insert(userID, followerID int64) error {
+func (f FollowsModel) Insert(userID, followerID int64) (*Follow, error) {
 
 	query := `
-	INSERT INTO follows (user_id, followerID)
-	VALUES ($1, $2) 
+	INSERT INTO follows (user_id, follower_id)
+	VALUES ($1, $2)
+	RETURNING created_at
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := f.DB.Exec(ctx, query, userID, followerID)
-	if err != nil {
-		return err
+	follow := Follow{
+		UserID:     userID,
+		FollowerID: followerID,
 	}
 
-	return nil
+	err := f.DB.QueryRow(ctx, query, userID, followerID).Scan(&follow.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &follow, nil
 }
 
 func (f FollowsModel) Delete(userID, followerID int64) error {
