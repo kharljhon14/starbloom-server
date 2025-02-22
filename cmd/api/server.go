@@ -34,6 +34,7 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("POST /api/v1/login", app.createAuthenticationTokenHandler)
 	mux.HandleFunc("GET /api/v1/users/{username}", app.getUserhandler)
 	mux.HandleFunc("POST /api/v1/follow", app.followUserHandler)
+	mux.HandleFunc("POST /api/v1/unfollow", app.unFollowUserHandler)
 
 	return app.recoverPanic(app.logRequest(mux))
 }
