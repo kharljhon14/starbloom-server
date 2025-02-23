@@ -32,10 +32,10 @@ func (app *Application) Mount() http.Handler {
 
 	mux.HandleFunc("POST /api/v1/signup", app.createUserHandler)
 	mux.HandleFunc("POST /api/v1/login", app.createAuthenticationTokenHandler)
-	mux.HandleFunc("GET /api/v1/users/{username}", app.getUserhandler)
+	mux.HandleFunc("GET /api/v1/users/{username}", app.requireAuthenticatedUser(app.getUserhandler))
 
-	mux.HandleFunc("POST /api/v1/follow", app.followUserHandler)
-	mux.HandleFunc("POST /api/v1/unfollow", app.unFollowUserHandler)
+	mux.HandleFunc("POST /api/v1/follow", app.requireAuthenticatedUser(app.followUserHandler))
+	mux.HandleFunc("POST /api/v1/unfollow", app.requireAuthenticatedUser(app.unFollowUserHandler))
 
 	mux.HandleFunc("GET /api/v1/followers", app.requireAuthenticatedUser(app.getFollowersHandler))
 
