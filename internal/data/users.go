@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -22,6 +21,8 @@ var (
 type UserModel struct {
 	DB *pgx.Conn
 }
+
+var AnonymousUser = &User{}
 
 type User struct {
 	ID        int64     `json:"id"`
@@ -97,8 +98,6 @@ func (m UserModel) GetUser(username string) (*User, error) {
 		&user.CreatedAt,
 	)
 	if err != nil {
-		var pgErr pgconn.PgError
-		fmt.Println(pgErr.Code)
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			return nil, ErrNoRecordFound
@@ -134,6 +133,10 @@ func (p *password) Matches(plainTextPassword string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 func ValidateUser(v *validator.Validator, user *User) {

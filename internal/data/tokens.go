@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base32"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -13,6 +15,7 @@ import (
 
 const (
 	ScopeAuthentication = "authentication"
+	ScopeAuthorization  = "authorization"
 )
 
 type Token struct {
@@ -90,6 +93,58 @@ func (m TokenModel) insert(token *Token) error {
 	_, err := m.DB.Exec(ctx, query, args...)
 
 	return err
+}
+
+func (m TokenModel) GetForToken(tokenScope, tokenPlainText string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlainText))
+
+	query := `
+		SELECT 
+		u.id, 
+		u.username,
+		u.first_name,
+		u.last_name,
+		u.hashed_password,
+		u.created_at,
+		u.activated
+		FROM users u
+		INNER JOIN tokens t
+		ON u.id = t.user_id
+		WHERE t.hash = $1
+		AND t.scope = $2
+		AND t.expired_at > $3
+	`
+
+	args := []any{
+		tokenHash[:],
+		tokenScope,
+		time.Now(),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var user User
+
+	err := m.DB.QueryRow(ctx, query, args...).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Password.hash,
+		&user.CreatedAt,
+		&user.Activated,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRecordFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
 }
 
 func (m TokenModel) DeleteAllForUser(scope string, userId int64) error {

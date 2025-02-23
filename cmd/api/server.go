@@ -37,9 +37,9 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("POST /api/v1/follow", app.followUserHandler)
 	mux.HandleFunc("POST /api/v1/unfollow", app.unFollowUserHandler)
 
-	mux.HandleFunc("GET /api/v1/followers", app.getFollowersHandler)
+	mux.HandleFunc("GET /api/v1/followers", app.requireAuthenticatedUser(app.getFollowersHandler))
 
-	return app.recoverPanic(app.logRequest(mux))
+	return app.recoverPanic(app.logRequest(app.authenticate(mux)))
 }
 
 func (app *Application) Serve(router http.Handler) error {

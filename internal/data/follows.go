@@ -71,7 +71,7 @@ func (f FollowsModel) GetFollowers(userID int64) ([]*FollowUser, error) {
 
 	query := `
 		SELECT u.id, u.username, u.first_name, u.last_name from users
-		u inner join follows f on u.id = f.follower_id
+		u INNER JOIN follows f ON u.id = f.follower_id
 		WHERE user_id = $1
 	`
 
