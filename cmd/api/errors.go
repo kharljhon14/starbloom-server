@@ -41,7 +41,6 @@ func (app *Application) serverErrorResponse(
 func (app *Application) notFoundErrorResponse(
 	w http.ResponseWriter,
 	r *http.Request,
-	err error,
 ) {
 	message := "could not find the requested resource"
 	app.errorResponse(w, r, http.StatusNotFound, message)
