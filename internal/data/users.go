@@ -14,6 +14,7 @@ import (
 
 var (
 	ErrNoRecordFound     = errors.New("record not found")
+	ErrEditConflict      = errors.New("edit conflict")
 	ErrDuplicateEmail    = errors.New("email already in use")
 	ErrDuplicateUsername = errors.New("username already exist")
 )

@@ -87,3 +87,11 @@ func (app *Application) authenticatedRequiredResponse(
 	message := "you must be authenticated to access this resource"
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
+
+func (app *Application) editConflictResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	message := "unable to edit record due to an edit conflict, please try again later"
+	app.errorResponse(w, r, http.StatusConflict, message)
+}

@@ -69,3 +69,37 @@ func (p PostModel) Get(postID int64) (*Post, error) {
 
 	return &post, nil
 }
+
+func (p PostModel) Update(post *Post) error {
+	query := `
+		UPDATE posts SET content = $1, updated_at = $2
+		WHERE id = $3
+		RETURNING content, updated_at
+	`
+
+	updatedAt := time.Now().Local().UTC()
+
+	args := []any{
+		post.Content,
+		updatedAt,
+		post.ID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := p.DB.QueryRow(ctx, query, args...).Scan(
+		&post.Content,
+		&post.UpdatedAt,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
