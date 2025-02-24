@@ -2,9 +2,15 @@ package data
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+)
+
+var (
+	ErrAlreadyFollowing = errors.New("already following")
 )
 
 type Follow struct {
@@ -35,7 +41,18 @@ func (f FollowsModel) Insert(userID, followerID int64) (*Follow, error) {
 
 	err := f.DB.QueryRow(ctx, query, userID, followerID).Scan(&follow.CreatedAt)
 	if err != nil {
+		var pgError *pgconn.PgError
+		if errors.As(err, &pgError) {
+			switch pgError.ConstraintName {
+			case "unique_follow":
+				return nil, ErrAlreadyFollowing
+			default:
+				return nil, err
+			}
+		}
+
 		return nil, err
+
 	}
 
 	return &follow, nil

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/kharljhon14/starbloom-server/internal/data"
@@ -29,7 +30,12 @@ func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request
 
 	follow, err := app.Models.Follows.Insert(input.UserID, input.FollowerID)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrAlreadyFollowing):
+			app.badRequestErrorResponse(w, r, err)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
