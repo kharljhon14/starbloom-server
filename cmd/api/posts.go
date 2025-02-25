@@ -76,14 +76,29 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.getContextUser(r)
+	var input struct {
+		ID int64 `json:"id"`
+	}
+	var err error
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestErrorResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(input.ID > 0, "id", "must be a valid id")
+
+	if !v.Valid() {
+		app.validationErrorResponse(w, r, v.Errors)
+		return
+	}
 
 	var limit int
 	var offset int
-	var err error
 
 	limitParam := r.URL.Query().Get("limit")
-
 	pageParam := r.URL.Query().Get("page")
 
 	limit, err = strconv.Atoi(limitParam)
@@ -102,7 +117,7 @@ func (app *Application) GetPostsHandler(w http.ResponseWriter, r *http.Request) 
 
 	offset = (page - 1) * limit
 
-	posts, err := app.Models.Posts.GetAll(user.ID, limit, offset)
+	posts, err := app.Models.Posts.GetAll(input.ID, limit, offset)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

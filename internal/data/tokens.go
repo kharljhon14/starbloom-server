@@ -102,6 +102,7 @@ func (m TokenModel) GetForToken(tokenScope, tokenPlainText string) (*User, error
 		SELECT 
 		u.id, 
 		u.username,
+		u.email,
 		u.first_name,
 		u.last_name,
 		u.hashed_password,
@@ -129,6 +130,7 @@ func (m TokenModel) GetForToken(tokenScope, tokenPlainText string) (*User, error
 	err := m.DB.QueryRow(ctx, query, args...).Scan(
 		&user.ID,
 		&user.Username,
+		&user.Email,
 		&user.FirstName,
 		&user.LastName,
 		&user.Password.hash,
