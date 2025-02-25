@@ -44,6 +44,7 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("GET /api/v1/posts/{id}", app.requireAuthenticatedUser(app.getPostHandler))
 	mux.HandleFunc("PATCH /api/v1/posts/{id}", app.requireAuthenticatedUser(app.updatePostHandler))
 	mux.HandleFunc("DELETE /api/v1/posts/{id}", app.requireAuthenticatedUser(app.deletePostHandler))
+
 	mux.HandleFunc("GET /api/v1/posts/following", app.requireAuthenticatedUser(app.getFollowingPostsHandler))
 
 	return app.recoverPanic(app.logRequest(app.authenticate(mux)))

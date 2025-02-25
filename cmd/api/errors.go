@@ -88,6 +88,14 @@ func (app *Application) authenticatedRequiredResponse(
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
 
+func (app *Application) authorizationRequiredResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	message := "you don't have the authorization to process the request"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
+
 func (app *Application) editConflictResponse(
 	w http.ResponseWriter,
 	r *http.Request,

@@ -9,7 +9,10 @@ import (
 )
 
 func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request) {
-	var input data.Follow
+	user := app.getContextUser(r)
+	var input struct {
+		UserID int64 `json:"user_id"`
+	}
 
 	err := app.readJSON(w, r, &input)
 	if err != nil {
@@ -20,15 +23,14 @@ func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request
 	v := validator.New()
 
 	v.Check(input.UserID != 0, "user_id", "user_id is required")
-	v.Check(input.FollowerID != 0, "follower_id", "follower_id is required")
-	v.Check(input.UserID != input.FollowerID, "follower_id", "invalid follower_id")
+	v.Check(input.UserID != user.ID, "user_id", "must not be own user_id")
 
 	if !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	follow, err := app.Models.Follows.Insert(input.UserID, input.FollowerID)
+	follow, err := app.Models.Follows.Insert(input.UserID, user.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrAlreadyFollowing):
@@ -46,9 +48,10 @@ func (app *Application) followUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *Application) unFollowUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getContextUser(r)
+
 	var input struct {
-		UserID     int64 `json:"user_id"`
-		FollowerID int64 `json:"follower_id"`
+		UserID int64 `json:"user_id"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -60,15 +63,14 @@ func (app *Application) unFollowUserHandler(w http.ResponseWriter, r *http.Reque
 	v := validator.New()
 
 	v.Check(input.UserID != 0, "user_id", "user_id is required")
-	v.Check(input.FollowerID != 0, "follower_id", "follower_id is required")
-	v.Check(input.UserID != input.FollowerID, "follower_id", "invalid follower_id")
+	v.Check(input.UserID != user.ID, "user_id", "must not be own user_id")
 
 	if !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	err = app.Models.Follows.Delete(input.UserID, input.FollowerID)
+	err = app.Models.Follows.Delete(input.UserID, user.ID)
 	if err != nil {
 		// Update error response to 404
 		app.serverErrorResponse(w, r, err)

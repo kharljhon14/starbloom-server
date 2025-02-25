@@ -130,6 +130,7 @@ func (app *Application) getPostsHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getContextUser(r)
 	stringID := r.PathValue("id")
 
 	ID, err := strconv.ParseInt(stringID, 10, 64)
@@ -147,6 +148,11 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 			app.serverErrorResponse(w, r, err)
 		}
 
+		return
+	}
+
+	if user.ID != post.UserID {
+		app.authorizationRequiredResponse(w, r)
 		return
 	}
 
@@ -189,6 +195,8 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
+
+	// Todo handle only delete user created posts
 	stringID := r.PathValue("id")
 
 	ID, err := strconv.ParseInt(stringID, 10, 64)
