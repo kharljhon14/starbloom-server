@@ -75,7 +75,7 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *Application) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) getPostsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		ID int64 `json:"id"`
 	}

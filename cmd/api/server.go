@@ -39,7 +39,7 @@ func (app *Application) Mount() http.Handler {
 
 	mux.HandleFunc("GET /api/v1/followers", app.requireAuthenticatedUser(app.getFollowersHandler))
 
-	mux.HandleFunc("GET /api/v1/posts", app.requireAuthenticatedUser(app.GetPostsHandler))
+	mux.HandleFunc("GET /api/v1/posts", app.requireAuthenticatedUser(app.getPostsHandler))
 	mux.HandleFunc("POST /api/v1/posts", app.requireAuthenticatedUser(app.createPostHandler))
 	mux.HandleFunc("GET /api/v1/posts/{id}", app.requireAuthenticatedUser(app.getPostHandler))
 	mux.HandleFunc("PATCH /api/v1/posts/{id}", app.requireAuthenticatedUser(app.updatePostHandler))
