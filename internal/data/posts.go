@@ -103,3 +103,24 @@ func (p PostModel) Update(post *Post) error {
 
 	return nil
 }
+
+func (p PostModel) Delete(postID int64) error {
+	query := `
+		DELETE FROM posts
+		WHERE id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := p.DB.Exec(ctx, query, postID)
+	if err != nil {
+		return err
+	}
+
+	if rows.RowsAffected() == 0 {
+		return ErrNoRecordFound
+	}
+
+	return nil
+}
