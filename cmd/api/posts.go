@@ -159,3 +159,50 @@ func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *Application) getFollowingPostsHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		ID int64 `json:"id"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestErrorResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(input.ID > 0, "id", "ID must be valid")
+
+	if !v.Valid() {
+		app.validationErrorResponse(w, r, v.Errors)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	offsetParam := r.URL.Query().Get("offset")
+
+	var limit int
+	var offset int
+
+	limit, err = strconv.Atoi(limitParam)
+	if err != nil {
+		limit = 10
+	}
+	offset, err = strconv.Atoi(offsetParam)
+	if err != nil {
+		offset = 1
+	}
+
+	posts, err := app.Models.Follows.GetFollowingPosts(input.ID, limit, offset)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"posts": posts}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
