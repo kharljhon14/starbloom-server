@@ -108,26 +108,14 @@ func (f FollowsModel) GetFollowers(userID int64) ([]*FollowUser, error) {
 	return users, nil
 }
 
-type PostWithUser struct {
-	ID        int64     `json:"id"`
-	UserId    int64     `json:"user_id"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updted_at"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-}
-
 func (f FollowsModel) GetFollowingPosts(userID int64, limit, offset int) ([]*PostWithUser, error) {
 	query := `
 		SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
 		u.first_name, u.last_name
 		FROM posts p INNER JOIN users u ON p.user_id = u.id
 		WHERE user_id IN (SELECT user_id FROM follows where follower_id = $1)
-		ORDER BY created_at desc LIMIT $2 OFFSET $3
+		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`
-
-	// todo: Handle pagination
 
 	args := []any{userID, limit, offset}
 
@@ -139,7 +127,7 @@ func (f FollowsModel) GetFollowingPosts(userID int64, limit, offset int) ([]*Pos
 		return nil, err
 	}
 
-	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[PostWithUser])
+	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[PostWithUser])
 	if err != nil {
 		return nil, err
 	}

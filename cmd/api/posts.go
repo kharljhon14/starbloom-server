@@ -75,6 +75,45 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *Application) GetPostsHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getContextUser(r)
+
+	var limit int
+	var offset int
+	var err error
+
+	limitParam := r.URL.Query().Get("limit")
+
+	pageParam := r.URL.Query().Get("page")
+
+	limit, err = strconv.Atoi(limitParam)
+	if err != nil {
+		limit = 10
+	}
+
+	page, err := strconv.Atoi(pageParam)
+	if err != nil {
+		page = 1
+	}
+
+	if page <= 0 {
+		page = 1
+	}
+
+	offset = (page - 1) * limit
+
+	posts, err := app.Models.Posts.GetAll(user.ID, limit, offset)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"posts": posts}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
 func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
 	stringID := r.PathValue("id")
 
@@ -181,7 +220,7 @@ func (app *Application) getFollowingPostsHandler(w http.ResponseWriter, r *http.
 	}
 
 	limitParam := r.URL.Query().Get("limit")
-	offsetParam := r.URL.Query().Get("offset")
+	pageParam := r.URL.Query().Get("page")
 
 	var limit int
 	var offset int
@@ -190,10 +229,17 @@ func (app *Application) getFollowingPostsHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		limit = 10
 	}
-	offset, err = strconv.Atoi(offsetParam)
+
+	page, err := strconv.Atoi(pageParam)
 	if err != nil {
-		offset = 1
+		page = 1
 	}
+
+	if page <= 0 {
+		page = 1
+	}
+
+	offset = (page - 1) * limit
 
 	posts, err := app.Models.Follows.GetFollowingPosts(input.ID, limit, offset)
 	if err != nil {

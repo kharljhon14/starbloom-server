@@ -17,6 +17,16 @@ type Post struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type PostWithUser struct {
+	ID        int64     `json:"id"`
+	UserId    int64     `json:"user_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updted_at"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+}
+
 type PostModel struct {
 	DB *pgx.Conn
 }
@@ -68,6 +78,33 @@ func (p PostModel) Get(postID int64) (*Post, error) {
 	}
 
 	return &post, nil
+}
+
+func (p PostModel) GetAll(userID int64, limit, offset int) ([]*PostWithUser, error) {
+	query := `
+		SELECT p.*, u.first_name, u.last_name
+		FROM posts p INNER JOIN users u 
+		ON p.user_id = u.id
+		WHERE u.id = $1
+		ORDER BY created_at DESC LIMIT $2 OFFSET $3
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{userID, limit, offset}
+
+	rows, err := p.DB.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[PostWithUser])
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }
 
 func (p PostModel) Update(post *Post) error {
