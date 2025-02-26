@@ -195,8 +195,8 @@ func (app *Application) updatePostHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getContextUser(r)
 
-	// Todo handle only delete user created posts
 	stringID := r.PathValue("id")
 
 	ID, err := strconv.ParseInt(stringID, 10, 64)
@@ -205,7 +205,23 @@ func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = app.Models.Posts.Delete(ID)
+	post, err := app.Models.Posts.Get(ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if user.ID != post.UserID {
+		app.authorizationRequiredResponse(w, r)
+		return
+	}
+
+	err = app.Models.Posts.Delete(post.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrNoRecordFound):
