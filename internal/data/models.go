@@ -9,6 +9,7 @@ type Models struct {
 	Tokens  TokenModel
 	Follows FollowsModel
 	Posts   PostModel
+	Likes   LikeModel
 }
 
 func NewModels(db *pgx.Conn) Models {
@@ -17,5 +18,6 @@ func NewModels(db *pgx.Conn) Models {
 		Tokens:  TokenModel{DB: db},
 		Follows: FollowsModel{DB: db},
 		Posts:   PostModel{DB: db},
+		Likes:   LikeModel{DB: db},
 	}
 }

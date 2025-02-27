@@ -47,6 +47,9 @@ func (app *Application) Mount() http.Handler {
 
 	mux.HandleFunc("GET /api/v1/posts/following", app.requireAuthenticatedUser(app.getFollowingPostsHandler))
 
+	mux.HandleFunc("POST /api/v1/like", app.requireAuthenticatedUser(app.likePostHandler))
+	mux.HandleFunc("POST /api/v1/unlike", app.requireAuthenticatedUser(app.unlikePostHandler))
+
 	return app.recoverPanic(app.logRequest(app.authenticate(mux)))
 }
 
