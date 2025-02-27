@@ -73,7 +73,12 @@ func (app *Application) unFollowUserHandler(w http.ResponseWriter, r *http.Reque
 	err = app.Models.Follows.Delete(input.UserID, user.ID)
 	if err != nil {
 		// Update error response to 404
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
