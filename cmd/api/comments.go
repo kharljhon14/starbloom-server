@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/kharljhon14/starbloom-server/internal/data"
 	"github.com/kharljhon14/starbloom-server/internal/validator"
@@ -52,6 +53,41 @@ func (app *Application) addCommentHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	err = app.writeJSON(w, http.StatusCreated, envelope{"comment": comment}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *Application) getCommentByIDHandler(w http.ResponseWriter, r *http.Request) {
+	stringID := r.PathValue("id")
+
+	ID, err := strconv.ParseInt(stringID, 10, 64)
+	if err != nil {
+		app.notFoundErrorResponse(w, r)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(ID > 0, "id", "must be a valid id")
+
+	if !v.Valid() {
+		app.validationErrorResponse(w, r, v.Errors)
+		return
+	}
+
+	comment, err := app.Models.Comments.Get(ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"comment": comment}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

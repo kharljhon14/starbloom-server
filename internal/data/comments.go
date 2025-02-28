@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -60,4 +61,50 @@ func (c CommentModel) Insert(comment *Comment) error {
 	}
 
 	return nil
+}
+
+type CommentWithUser struct {
+	ID        int64     `json:"id"`
+	PostID    int64     `json:"post_id"`
+	UserID    int64     `json:"user_id"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Username  string    `json:"username"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+}
+
+func (c CommentModel) Get(commentID int64) (*CommentWithUser, error) {
+	query := `
+		SELECT c.id, c.post_id, c.user_id, c.comment, c.created_at, c.updated_at, u.username, u.first_name, u.last_name FROM comments c
+		INNER JOIN users u ON c.user_id = u.id
+		WHERE c.id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var comment CommentWithUser
+	err := c.DB.QueryRow(ctx, query, commentID).Scan(
+		&comment.ID,
+		&comment.PostID,
+		&comment.UserID,
+		&comment.Comment,
+		&comment.CreatedAt,
+		&comment.UpdatedAt,
+		&comment.Username,
+		&comment.FirstName,
+		&comment.LastName,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRecordFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &comment, nil
 }
