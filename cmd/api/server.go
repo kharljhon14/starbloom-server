@@ -50,6 +50,8 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("POST /api/v1/like", app.requireAuthenticatedUser(app.likePostHandler))
 	mux.HandleFunc("POST /api/v1/unlike", app.requireAuthenticatedUser(app.unlikePostHandler))
 
+	mux.HandleFunc("POST /api/v1/comments", app.requireAuthenticatedUser(app.addCommentHandler))
+
 	return app.recoverPanic(app.logRequest(app.authenticate(mux)))
 }
 

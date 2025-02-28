@@ -41,7 +41,7 @@ func (l LikeModel) Insert(like *Like) error {
 			case "unique_like":
 				return ErrAlreadyLiked
 			default:
-				return pgErr
+				return err
 			}
 		}
 
