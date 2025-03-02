@@ -93,6 +93,69 @@ func (app *Application) getCommentByIDHandler(w http.ResponseWriter, r *http.Req
 	}
 }
 
+func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		PostID int64 `json:"post_id"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestErrorResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(input.PostID > 0, "post_id", "post_id must be valid")
+
+	if !v.Valid() {
+		app.validationErrorResponse(w, r, v.Errors)
+		return
+	}
+
+	_, err = app.Models.Posts.Get(input.PostID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var limit int
+	var offset int
+
+	limitParam := r.URL.Query().Get("limit")
+
+	limit, err = strconv.Atoi(limitParam)
+	if err != nil {
+		limit = 10
+	}
+
+	pageParam := r.URL.Query().Get("page")
+
+	page, err := strconv.Atoi(pageParam)
+	if err != nil {
+		page = 1
+	}
+
+	offset = (page - 1) * limit
+
+	comments, err := app.Models.Comments.GetCommentsByPost(input.PostID, limit, offset)
+	if err != nil {
+		// TODO handle different error response
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"comments": comments}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
 func (app *Application) updateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.getContextUser(r)
 

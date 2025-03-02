@@ -119,6 +119,8 @@ func (app *Application) getPostsHandler(w http.ResponseWriter, r *http.Request) 
 
 	posts, err := app.Models.Posts.GetAll(input.ID, limit, offset)
 	if err != nil {
+		// TODO handle different error response
+
 		app.serverErrorResponse(w, r, err)
 		return
 	}

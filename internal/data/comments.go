@@ -109,6 +109,32 @@ func (c CommentModel) Get(commentID int64) (*CommentWithUser, error) {
 	return &comment, nil
 }
 
+func (c CommentModel) GetCommentsByPost(postID int64, limit, offset int) ([]*CommentWithUser, error) {
+	// TODO Add metadata
+	query := `
+		SELECT c.id, c.post_id, c.user_id, c.comment, c.created_at, c.updated_at,
+		u.username, u.first_name, u.last_name FROM comments c INNER JOIN users u
+		ON c.user_id = u.id
+		WHERE c.post_id = $1
+		ORDER BY created_at DESC LIMIT $2 OFFSET $3
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := c.DB.Query(ctx, query, postID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	comments, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[CommentWithUser])
+	if err != nil {
+		return nil, err
+	}
+
+	return comments, nil
+}
+
 func (c CommentModel) Update(comment *Comment) error {
 	query := `
 		UPDATE comments SET comment = $1, updated_at = $2
