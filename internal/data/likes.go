@@ -51,6 +51,26 @@ func (l LikeModel) Insert(like *Like) error {
 	return nil
 }
 
+func (l LikeModel) Get(postID int64) (int, error) {
+	query := `
+		SELECT count(post_id) FROM likes
+		WHERE post_id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var count int
+	err := l.DB.QueryRow(ctx, query, postID).Scan(
+		&count,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (l LikeModel) Delete(postID, userID int64) error {
 	query := `
 		DELETE FROM likes WHERE post_id = $1 AND user_id = $2
