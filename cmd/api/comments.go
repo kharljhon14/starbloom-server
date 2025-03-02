@@ -229,3 +229,56 @@ func (app *Application) updateCommentHandler(w http.ResponseWriter, r *http.Requ
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *Application) deleteCommentHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getContextUser(r)
+
+	stringID := r.PathValue("id")
+
+	ID, err := strconv.ParseInt(stringID, 10, 64)
+	if err != nil {
+		app.notFoundErrorResponse(w, r)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(ID > 0, "id", "ID must be valid")
+
+	if !v.Valid() {
+		app.validationErrorResponse(w, r, v.Errors)
+		return
+	}
+
+	comment, err := app.Models.Comments.Get(ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if user.ID != comment.UserID {
+		app.authorizationRequiredResponse(w, r)
+		return
+	}
+
+	err = app.Models.Comments.Delete(comment.ID, comment.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRecordFound):
+			app.notFoundErrorResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "comment successfuly deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

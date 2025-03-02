@@ -166,3 +166,24 @@ func (c CommentModel) Update(comment *Comment) error {
 
 	return nil
 }
+
+func (c CommentModel) Delete(commentID, userID int64) error {
+	query := `
+		DELETE FROM comments
+		WHERE id = $1 AND user_id = $2
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := c.DB.Exec(ctx, query, commentID, userID)
+	if err != nil {
+		return err
+	}
+
+	if rows.RowsAffected() == 0 {
+		return ErrNoRecordFound
+	}
+
+	return nil
+}

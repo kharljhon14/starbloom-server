@@ -54,6 +54,7 @@ func (app *Application) Mount() http.Handler {
 	mux.HandleFunc("GET /api/v1/comments/{id}", app.requireAuthenticatedUser(app.getCommentByIDHandler))
 	mux.HandleFunc("GET /api/v1/comments", app.requireAuthenticatedUser(app.getCommentsByPostHandler))
 	mux.HandleFunc("PATCH /api/v1/comments/{id}", app.requireAuthenticatedUser(app.updateCommentHandler))
+	mux.HandleFunc("DELETE /api/v1/comments/{id}", app.requireAuthenticatedUser(app.deleteCommentHandler))
 
 	return app.recoverPanic(app.logRequest(app.authenticate(mux)))
 }
