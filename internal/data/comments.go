@@ -108,3 +108,35 @@ func (c CommentModel) Get(commentID int64) (*CommentWithUser, error) {
 
 	return &comment, nil
 }
+
+func (c CommentModel) Update(comment *Comment) error {
+	query := `
+		UPDATE comments SET comment = $1, updated_at = $2
+		WHERE id = $3
+		RETURNING comment, updated_at
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{
+		comment.Comment,
+		time.Now().Local().UTC(),
+		comment.ID,
+	}
+
+	err := c.DB.QueryRow(ctx, query, args...).Scan(
+		&comment.Comment,
+		&comment.UpdatedAt,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNoRecordFound
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
