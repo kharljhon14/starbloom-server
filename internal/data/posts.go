@@ -23,6 +23,7 @@ type PostWithUser struct {
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updted_at"`
+	Username  string    `json:"username"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
 }
@@ -80,11 +81,15 @@ func (p PostModel) Get(postID int64) (*Post, error) {
 	return &post, nil
 }
 
-func (p PostModel) GetAll(userID int64, limit, offset int) ([]*PostWithUser, error) {
+func (p PostModel) GetAll(userID int64, filter Filter) ([]*PostWithUser, Metadata, error) {
 	query := `
-		SELECT p.*, u.first_name, u.last_name
+		WITH total AS(
+			SELECT COUNT(*) AS total_count FROM posts WHERE user_id = $1
+		)
+		SELECT total.total_count, p.*, u.username, u.first_name, u.last_name
 		FROM posts p INNER JOIN users u 
 		ON p.user_id = u.id
+		CROSS JOIN total
 		WHERE u.id = $1
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`
@@ -92,19 +97,51 @@ func (p PostModel) GetAll(userID int64, limit, offset int) ([]*PostWithUser, err
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []any{userID, limit, offset}
+	args := []any{userID, filter.limit(), filter.offset()}
 
 	rows, err := p.DB.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[PostWithUser])
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+
+	// posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[PostWithUser])
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	totalRecords := 0
+	postsWithUser := []*PostWithUser{}
+
+	for rows.Next() {
+		var post PostWithUser
+
+		err := rows.Scan(
+			&totalRecords,
+			&post.ID,
+			&post.UserId,
+			&post.Content,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&post.Username,
+			&post.FirstName,
+			&post.LastName,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		postsWithUser = append(postsWithUser, &post)
 	}
 
-	return posts, nil
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filter.Page, filter.PageSize)
+
+	return postsWithUser, metadata, nil
 }
 
 func (p PostModel) Update(post *Post) error {

@@ -78,6 +78,7 @@ func (app *Application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 func (app *Application) getPostsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		ID int64 `json:"id"`
+		data.Filter
 	}
 	var err error
 	err = app.readJSON(w, r, &input)
@@ -90,42 +91,27 @@ func (app *Application) getPostsHandler(w http.ResponseWriter, r *http.Request) 
 
 	v.Check(input.ID > 0, "id", "must be a valid id")
 
-	if !v.Valid() {
+	qs := r.URL.Query()
+
+	page := app.readInt(qs, "page", 1, v)
+	pageSize := app.readInt(qs, "pageSize", 10, v)
+
+	input.Filter.Page = page
+	input.Filter.PageSize = pageSize
+
+	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	var limit int
-	var offset int
-
-	limitParam := r.URL.Query().Get("limit")
-	pageParam := r.URL.Query().Get("page")
-
-	limit, err = strconv.Atoi(limitParam)
+	posts, metadata, err := app.Models.Posts.GetAll(input.ID, input.Filter)
 	if err != nil {
-		limit = 10
-	}
-
-	page, err := strconv.Atoi(pageParam)
-	if err != nil {
-		page = 1
-	}
-
-	if page <= 0 {
-		page = 1
-	}
-
-	offset = (page - 1) * limit
-
-	posts, err := app.Models.Posts.GetAll(input.ID, limit, offset)
-	if err != nil {
-		// TODO handle different error response
 
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"posts": posts}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"_metadata": metadata, "posts": posts}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

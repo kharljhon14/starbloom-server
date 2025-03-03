@@ -85,7 +85,6 @@ type FollowUser struct {
 }
 
 func (f FollowsModel) GetFollowers(userID int64, filters Filter) ([]*FollowUser, Metadata, error) {
-
 	query := `
 		WITH total AS(
 			SELECT COUNT(*) AS total_count FROM follows WHERE user_id = $1
