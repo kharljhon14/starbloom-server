@@ -229,6 +229,7 @@ func (app *Application) deletePostHandler(w http.ResponseWriter, r *http.Request
 func (app *Application) getFollowingPostsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		ID int64 `json:"id"`
+		data.Filter
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -241,40 +242,25 @@ func (app *Application) getFollowingPostsHandler(w http.ResponseWriter, r *http.
 
 	v.Check(input.ID > 0, "id", "ID must be valid")
 
-	if !v.Valid() {
+	qs := r.URL.Query()
+
+	page := app.readInt(qs, "page", 1, v)
+	pageSize := app.readInt(qs, "pageSize", 50, v)
+	input.Filter.Page = page
+	input.Filter.PageSize = pageSize
+
+	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	limitParam := r.URL.Query().Get("limit")
-	pageParam := r.URL.Query().Get("page")
-
-	var limit int
-	var offset int
-
-	limit, err = strconv.Atoi(limitParam)
-	if err != nil {
-		limit = 10
-	}
-
-	page, err := strconv.Atoi(pageParam)
-	if err != nil {
-		page = 1
-	}
-
-	if page <= 0 {
-		page = 1
-	}
-
-	offset = (page - 1) * limit
-
-	posts, err := app.Models.Follows.GetFollowingPosts(input.ID, limit, offset)
+	posts, metadata, err := app.Models.Follows.GetFollowingPosts(input.ID, input.Filter)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"posts": posts}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"_metadata": metadata, "posts": posts}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

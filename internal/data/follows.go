@@ -140,30 +140,65 @@ func (f FollowsModel) GetFollowers(userID int64, filters Filter) ([]*FollowUser,
 	return users, metadata, nil
 }
 
-func (f FollowsModel) GetFollowingPosts(userID int64, limit, offset int) ([]*PostWithUser, error) {
+func (f FollowsModel) GetFollowingPosts(userID int64, filters Filter) ([]*PostWithUser, Metadata, error) {
 	query := `
-		SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-		u.first_name, u.last_name
+		WITH total AS(
+			SELECT COUNT(*) AS total_count FROM posts WHERE user_id IN (SELECT user_id FROM follows WHERE follower_id = $1)
+		)
+		SELECT total.total_count, p.id, p.user_id, p.content, p.created_at, p.updated_at,
+		u.username, u.first_name, u.last_name
 		FROM posts p INNER JOIN users u ON p.user_id = u.id
+		CROSS JOIN total
 		WHERE user_id IN (SELECT user_id FROM follows where follower_id = $1)
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`
 
-	args := []any{userID, limit, offset}
+	args := []any{userID, filters.limit(), filters.offset()}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	rows, err := f.DB.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+
+	// posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[PostWithUser])
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	totalRecords := 0
+	posts := []*PostWithUser{}
+
+	for rows.Next() {
+		var post PostWithUser
+
+		err := rows.Scan(
+			&totalRecords,
+			&post.ID,
+			&post.UserId,
+			&post.Content,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&post.Username,
+			&post.FirstName,
+			&post.LastName,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		posts = append(posts, &post)
 	}
 
-	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[PostWithUser])
-	if err != nil {
-		return nil, err
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
 	}
 
-	return posts, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return posts, metadata, nil
 
 }
