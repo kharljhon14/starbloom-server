@@ -96,6 +96,7 @@ func (app *Application) getCommentByIDHandler(w http.ResponseWriter, r *http.Req
 func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		PostID int64 `json:"post_id"`
+		data.Filter
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -108,7 +109,15 @@ func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.
 
 	v.Check(input.PostID > 0, "post_id", "post_id must be valid")
 
-	if !v.Valid() {
+	qs := r.URL.Query()
+
+	pageSize := app.readInt(qs, "pageSize", 10, v)
+	page := app.readInt(qs, "page", 1, v)
+
+	input.Filter.Page = page
+	input.Filter.PageSize = pageSize
+
+	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
@@ -124,33 +133,13 @@ func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var limit int
-	var offset int
-
-	limitParam := r.URL.Query().Get("limit")
-
-	limit, err = strconv.Atoi(limitParam)
+	comments, metadata, err := app.Models.Comments.GetCommentsByPost(input.PostID, input.Filter)
 	if err != nil {
-		limit = 10
-	}
-
-	pageParam := r.URL.Query().Get("page")
-
-	page, err := strconv.Atoi(pageParam)
-	if err != nil {
-		page = 1
-	}
-
-	offset = (page - 1) * limit
-
-	comments, err := app.Models.Comments.GetCommentsByPost(input.PostID, limit, offset)
-	if err != nil {
-		// TODO handle different error response
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"comments": comments}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"_metadata": metadata, "comments": comments}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

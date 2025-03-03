@@ -109,30 +109,70 @@ func (c CommentModel) Get(commentID int64) (*CommentWithUser, error) {
 	return &comment, nil
 }
 
-func (c CommentModel) GetCommentsByPost(postID int64, limit, offset int) ([]*CommentWithUser, error) {
-	// TODO Add metadata
+func (c CommentModel) GetCommentsByPost(postID int64, filters Filter) ([]*CommentWithUser, Metadata, error) {
 	query := `
-		SELECT c.id, c.post_id, c.user_id, c.comment, c.created_at, c.updated_at,
-		u.username, u.first_name, u.last_name FROM comments c INNER JOIN users u
-		ON c.user_id = u.id
+		WITH total AS (
+			SELECT COUNT(*) AS total_count FROM comments WHERE post_id = $1
+		)
+		SELECT 
+			total.total_count,
+			c.id, c.post_id, c.user_id, c.comment, c.created_at, c.updated_at,
+			u.username, u.first_name, u.last_name
+		FROM comments c
+		INNER JOIN users u ON c.user_id = u.id
+		CROSS JOIN total
 		WHERE c.post_id = $1
-		ORDER BY created_at DESC LIMIT $2 OFFSET $3
+		ORDER BY c.created_at DESC
+		LIMIT $2 OFFSET $3;
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := c.DB.Query(ctx, query, postID, limit, offset)
+	rows, err := c.DB.Query(ctx, query, postID, filters.limit(), filters.offset())
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	comments, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[CommentWithUser])
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+
+	totalRecords := 0
+	commentsWithUser := []*CommentWithUser{}
+
+	// comments, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[CommentWithUser])
+	// if err != nil {
+	// 	return nil, Metadata{}, err
+	// }
+
+	for rows.Next() {
+		var comment CommentWithUser
+
+		err := rows.Scan(
+			&totalRecords,
+			&comment.ID,
+			&comment.PostID,
+			&comment.UserID,
+			&comment.Comment,
+			&comment.CreatedAt,
+			&comment.UpdatedAt,
+			&comment.Username,
+			&comment.FirstName,
+			&comment.LastName,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		commentsWithUser = append(commentsWithUser, &comment)
 	}
 
-	return comments, nil
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return commentsWithUser, metadata, nil
 }
 
 func (c CommentModel) Update(comment *Comment) error {

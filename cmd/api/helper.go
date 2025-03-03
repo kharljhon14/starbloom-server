@@ -6,10 +6,29 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+
+	"github.com/kharljhon14/starbloom-server/internal/validator"
 )
 
 type envelope map[string]interface{}
+
+func (app *Application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be a integer value")
+		return defaultValue
+	}
+
+	return i
+}
 
 func (app *Application) writeJSON(
 	w http.ResponseWriter,
