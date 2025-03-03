@@ -84,28 +84,61 @@ type FollowUser struct {
 	LastName  string `json:"last_name"`
 }
 
-func (f FollowsModel) GetFollowers(userID int64) ([]*FollowUser, error) {
+func (f FollowsModel) GetFollowers(userID int64, filters Filter) ([]*FollowUser, Metadata, error) {
 
 	query := `
-		SELECT u.id, u.username, u.first_name, u.last_name from users
+		WITH total AS(
+			SELECT COUNT(*) AS total_count FROM follows WHERE user_id = $1
+		)
+		SELECT total.total_count, u.id, u.username, u.first_name, u.last_name from users
 		u INNER JOIN follows f ON u.id = f.follower_id
-		WHERE user_id = $1
+		CROSS JOIN total
+		WHERE user_id = $1 LIMIT $2 OFFSET $3
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := f.DB.Query(ctx, query, userID)
+	args := []any{userID, filters.limit(), filters.offset()}
+
+	rows, err := f.DB.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRecords := 0
+	users := []*FollowUser{}
+
+	// users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[FollowUser])
+	// if err != nil {
+	// 	return nil, Metadata{}, err
+	// }
+
+	for rows.Next() {
+		var user FollowUser
+
+		err := rows.Scan(
+			&totalRecords,
+			&user.UserID,
+			&user.Username,
+			&user.FirstName,
+			&user.LastName,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		users = append(users, &user)
 	}
 
-	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[FollowUser])
-	if err != nil {
-		return nil, err
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
 	}
 
-	return users, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return users, metadata, nil
 }
 
 func (f FollowsModel) GetFollowingPosts(userID int64, limit, offset int) ([]*PostWithUser, error) {

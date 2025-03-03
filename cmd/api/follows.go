@@ -87,6 +87,7 @@ func (app *Application) unFollowUserHandler(w http.ResponseWriter, r *http.Reque
 func (app *Application) getFollowersHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		UserID int64 `json:"user_id"`
+		data.Filter
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -99,18 +100,26 @@ func (app *Application) getFollowersHandler(w http.ResponseWriter, r *http.Reque
 
 	v.Check(input.UserID != 0, "user_id", "user_id is required")
 
-	if !v.Valid() {
+	qs := r.URL.Query()
+
+	page := app.readInt(qs, "page", 1, v)
+	pageSize := app.readInt(qs, "pageSize", 50, v)
+
+	input.Filter.Page = page
+	input.Filter.PageSize = pageSize
+
+	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	users, err := app.Models.Follows.GetFollowers(input.UserID)
+	users, metadata, err := app.Models.Follows.GetFollowers(input.UserID, input.Filter)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"users": users}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"_metadata": metadata, "users": users}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
