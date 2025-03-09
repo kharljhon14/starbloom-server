@@ -4,7 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
+
+	"slices"
 
 	"github.com/kharljhon14/starbloom-server/internal/data"
 	"github.com/kharljhon14/starbloom-server/internal/validator"
@@ -88,6 +91,39 @@ func (app *Application) authenticate(next http.Handler) http.Handler {
 		}
 
 		r = app.setContextUser(r, user)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *Application) enableCors(next http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Vary", "Origin")
+
+		origin := r.Header.Get("Origin")
+
+		trustedOrigins := os.Getenv("trusted_origins")
+		if trustedOrigins == "" {
+			app.serverErrorResponse(w, r, errors.New("server encountered an issue"))
+			panic("env: trusted_cors is missing")
+		}
+
+		app.Logger.PrintInfo("Origin", map[string]string{
+			"origin":  origin,
+			"origins": trustedOrigins,
+		})
+
+		if slices.Contains(strings.Fields(trustedOrigins), origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+
+			if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+				w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PATCH, DELETE")
+				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}
 
 		next.ServeHTTP(w, r)
 	})
