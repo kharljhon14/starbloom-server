@@ -53,6 +53,14 @@ func (app *Application) requireAuthenticatedUser(next http.HandlerFunc) http.Han
 
 func (app *Application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+
+		if url == "/api/v1/login" ||
+			url == "/api/v1/signup" ||
+			url == "/api/v1/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		w.Header().Add("Vary", "Authorization")
 
@@ -107,11 +115,6 @@ func (app *Application) enableCors(next http.Handler) http.HandlerFunc {
 			app.serverErrorResponse(w, r, errors.New("server encountered an issue"))
 			panic("env: trusted_cors is missing")
 		}
-
-		app.Logger.PrintInfo("Origin", map[string]string{
-			"origin":  origin,
-			"origins": trustedOrigins,
-		})
 
 		if slices.Contains(strings.Fields(trustedOrigins), origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
