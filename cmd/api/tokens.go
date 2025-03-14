@@ -67,3 +67,12 @@ func (app *Application) createAuthenticationTokenHandler(
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *Application) getAuthenticatedUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getContextUser(r)
+
+	err := app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

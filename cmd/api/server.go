@@ -32,6 +32,7 @@ func (app *Application) Mount() http.Handler {
 
 	mux.HandleFunc("POST /api/v1/signup", app.createUserHandler)
 	mux.HandleFunc("POST /api/v1/login", app.createAuthenticationTokenHandler)
+	mux.HandleFunc("GET /api/v1/validate-token", app.requireAuthenticatedUser(app.getAuthenticatedUserHandler))
 	mux.HandleFunc("GET /api/v1/users/{username}", app.requireAuthenticatedUser(app.getUserhandler))
 
 	mux.HandleFunc("POST /api/v1/follow", app.requireAuthenticatedUser(app.followUserHandler))
