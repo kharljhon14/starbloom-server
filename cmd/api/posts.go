@@ -80,25 +80,20 @@ func (app *Application) getPostsHandler(w http.ResponseWriter, r *http.Request) 
 		ID int64 `json:"id"`
 		data.Filter
 	}
-	var err error
-	err = app.readJSON(w, r, &input)
-	if err != nil {
-		app.badRequestErrorResponse(w, r, err)
-		return
-	}
 
 	v := validator.New()
 
-	v.Check(input.ID > 0, "id", "must be a valid id")
-
 	qs := r.URL.Query()
 
+	id := int64(app.readInt(qs, "id", 0, v))
 	page := app.readInt(qs, "page", 1, v)
 	pageSize := app.readInt(qs, "pageSize", 10, v)
 
+	input.ID = id
 	input.Filter.Page = page
 	input.Filter.PageSize = pageSize
 
+	v.Check(input.ID > 0, "id", "must be a valid id")
 	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
