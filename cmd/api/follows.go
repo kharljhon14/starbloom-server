@@ -90,24 +90,19 @@ func (app *Application) getFollowersHandler(w http.ResponseWriter, r *http.Reque
 		data.Filter
 	}
 
-	err := app.readJSON(w, r, &input)
-	if err != nil {
-		app.badRequestErrorResponse(w, r, err)
-		return
-	}
-
 	v := validator.New()
-
-	v.Check(input.UserID != 0, "user_id", "user_id is required")
 
 	qs := r.URL.Query()
 
+	userID := app.readInt(qs, "userID", 0, v)
 	page := app.readInt(qs, "page", 1, v)
 	pageSize := app.readInt(qs, "pageSize", 50, v)
 
+	input.UserID = int64(userID)
 	input.Filter.Page = page
 	input.Filter.PageSize = pageSize
 
+	v.Check(input.UserID > 0, "userID", "must be valid userID")
 	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
