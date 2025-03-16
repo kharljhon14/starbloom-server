@@ -93,22 +93,21 @@ func (app *Application) getLikeCountHandler(w http.ResponseWriter, r *http.Reque
 		PostID int64 `json:"post_id"`
 	}
 
-	err := app.readJSON(w, r, &input)
-	if err != nil {
-		app.badRequestErrorResponse(w, r, err)
-		return
-	}
-
 	v := validator.New()
 
-	v.Check(input.PostID > 0, "post_id", "post_id must be valid")
+	qs := r.URL.Query()
 
+	postID := app.readInt(qs, "postID", 0, v)
+
+	input.PostID = int64(postID)
+
+	v.Check(input.PostID > 0, "postID", "post_id must be valid")
 	if !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	_, err = app.Models.Posts.Get(input.PostID)
+	_, err := app.Models.Posts.Get(input.PostID)
 	if err != nil {
 		app.notFoundErrorResponse(w, r)
 		return
