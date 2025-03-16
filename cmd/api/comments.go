@@ -99,30 +99,26 @@ func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.
 		data.Filter
 	}
 
-	err := app.readJSON(w, r, &input)
-	if err != nil {
-		app.badRequestErrorResponse(w, r, err)
-		return
-	}
-
 	v := validator.New()
 
-	v.Check(input.PostID > 0, "post_id", "post_id must be valid")
-
 	qs := r.URL.Query()
+
+	postID := int64(app.readInt(qs, "postID", 0, v))
 
 	pageSize := app.readInt(qs, "pageSize", 10, v)
 	page := app.readInt(qs, "page", 1, v)
 
+	input.PostID = postID
 	input.Filter.Page = page
 	input.Filter.PageSize = pageSize
 
+	v.Check(postID > 0, "post_id", "postID must be valid")
 	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
 	}
 
-	_, err = app.Models.Posts.Get(input.PostID)
+	_, err := app.Models.Posts.Get(postID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrNoRecordFound):
