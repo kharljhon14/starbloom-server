@@ -9,7 +9,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kharljhon14/starbloom-server/internal/validator"
 )
 
@@ -57,7 +57,7 @@ func ValidateTokenPlainText(v *validator.Validator, tokenPlainText string) {
 }
 
 type TokenModel struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, error) {

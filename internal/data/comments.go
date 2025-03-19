@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrInvalidPostID = errors.New("invalid post_id")
@@ -22,7 +22,7 @@ type Comment struct {
 }
 
 type CommentModel struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func (c CommentModel) Insert(comment *Comment) error {

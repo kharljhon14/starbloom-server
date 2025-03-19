@@ -5,7 +5,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kharljhon14/starbloom-server/cmd/api"
 	"github.com/kharljhon14/starbloom-server/internal/data"
 	"github.com/kharljhon14/starbloom-server/internal/jsonlog"
@@ -44,8 +44,8 @@ func main() {
 	}
 }
 
-func openDb(cfg api.Config) (*pgx.Conn, error) {
-	db, err := pgx.Connect(context.Background(), cfg.Db.Dsn)
+func openDb(cfg api.Config) (*pgxpool.Pool, error) {
+	db, err := pgxpool.New(context.Background(), cfg.Db.Dsn)
 	if err != nil {
 		return nil, err
 	}

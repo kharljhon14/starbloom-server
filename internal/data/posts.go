@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Post struct {
@@ -29,7 +29,7 @@ type PostWithUser struct {
 }
 
 type PostModel struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func (p PostModel) Insert(post *Post) error {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -20,7 +20,7 @@ type Follow struct {
 }
 
 type FollowsModel struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func (f FollowsModel) Insert(userID, followerID int64) (*Follow, error) {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrAlreadyLiked = errors.New("already liked")
@@ -18,7 +18,7 @@ type Like struct {
 }
 
 type LikeModel struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func (l LikeModel) Insert(like *Like) error {

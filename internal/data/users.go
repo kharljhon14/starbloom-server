@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kharljhon14/starbloom-server/internal/validator"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,7 +20,7 @@ var (
 )
 
 type UserModel struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 var AnonymousUser = &User{}

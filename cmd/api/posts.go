@@ -226,24 +226,19 @@ func (app *Application) getFollowingPostsHandler(w http.ResponseWriter, r *http.
 		ID int64 `json:"id"`
 		data.Filter
 	}
-
-	err := app.readJSON(w, r, &input)
-	if err != nil {
-		app.badRequestErrorResponse(w, r, err)
-		return
-	}
-
 	v := validator.New()
-
-	v.Check(input.ID > 0, "id", "ID must be valid")
 
 	qs := r.URL.Query()
 
+	ID := app.readInt(qs, "id", 0, v)
 	page := app.readInt(qs, "page", 1, v)
 	pageSize := app.readInt(qs, "pageSize", 50, v)
+
+	input.ID = int64(ID)
 	input.Filter.Page = page
 	input.Filter.PageSize = pageSize
 
+	v.Check(input.ID > 0, "id", "ID must be valid")
 	if data.ValidateFilters(v, input.Filter); !v.Valid() {
 		app.validationErrorResponse(w, r, v.Errors)
 		return
