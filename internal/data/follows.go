@@ -144,10 +144,23 @@ func (f FollowsModel) GetFollowingPosts(userID int64, filters Filter) ([]*PostWi
 	query := `
 		WITH total AS(
 			SELECT COUNT(*) AS total_count FROM posts WHERE user_id IN (SELECT user_id FROM follows WHERE follower_id = $1)
+		),
+		like_counts AS(
+			SELECT post_id, COUNT(*) AS like_count
+			FROM likes
+			GROUP BY post_id
+		),
+		user_likes AS (
+   			SELECT post_id 
+    		FROM likes 
+   			WHERE user_id = $1
 		)
 		SELECT total.total_count, p.id, p.user_id, p.content, p.created_at, p.updated_at,
-		u.username, u.first_name, u.last_name
+		u.username, u.first_name, u.last_name, COALESCE(l.like_count, 0) AS like_count,
+		CASE WHEN ul.post_id IS NOT NULL THEN true ELSE false END AS liked_by_user
 		FROM posts p INNER JOIN users u ON p.user_id = u.id
+		LEFT JOIN like_counts l ON p.id = l.post_id
+		LEFT JOIN user_likes ul ON p.id = ul.post_id
 		CROSS JOIN total
 		WHERE user_id IN (SELECT user_id FROM follows where follower_id = $1)
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
@@ -185,6 +198,8 @@ func (f FollowsModel) GetFollowingPosts(userID int64, filters Filter) ([]*PostWi
 			&post.Username,
 			&post.FirstName,
 			&post.LastName,
+			&post.LikeCount,
+			&post.LikedByUser,
 		)
 		if err != nil {
 			return nil, Metadata{}, err
