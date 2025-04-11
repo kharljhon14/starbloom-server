@@ -162,7 +162,7 @@ func (f FollowsModel) GetFollowingPosts(userID int64, filters Filter) ([]*PostWi
 		LEFT JOIN like_counts l ON p.id = l.post_id
 		LEFT JOIN user_likes ul ON p.id = ul.post_id
 		CROSS JOIN total
-		WHERE user_id IN (SELECT user_id FROM follows where follower_id = $1)
+		WHERE user_id IN (SELECT user_id FROM follows where follower_id = $1) OR p.user_id = $1
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`
 
