@@ -18,16 +18,17 @@ type Post struct {
 }
 
 type PostWithUser struct {
-	ID          int64     `json:"id"`
-	UserId      int64     `json:"user_id"`
-	Content     string    `json:"content"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updted_at"`
-	Username    string    `json:"username"`
-	FirstName   string    `json:"first_name"`
-	LastName    string    `json:"last_name"`
-	LikeCount   int64     `json:"like_count"`
-	LikedByUser bool      `json:"liked_by_user"`
+	ID           int64     `json:"id"`
+	UserId       int64     `json:"user_id"`
+	Content      string    `json:"content"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updted_at"`
+	Username     string    `json:"username"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	LikeCount    int64     `json:"like_count"`
+	LikedByUser  bool      `json:"liked_by_user"`
+	CommentCount int64     `json:"comment_count"`
 }
 
 type PostModel struct {
