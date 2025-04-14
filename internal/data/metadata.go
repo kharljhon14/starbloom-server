@@ -42,6 +42,10 @@ func (f Filter) offset() int {
 	return (f.Page - 1) * f.PageSize
 }
 
+func (f Filter) sort() string {
+	return f.Sort
+}
+
 func ValidateFilters(v *validator.Validator, f Filter) {
 	v.Check(f.Page > 0, "page", "page must be greater than zero")
 	v.Check(f.Page <= 10_000_000, "page", "page must be  a maximum of 10 million")

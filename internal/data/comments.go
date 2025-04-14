@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -110,21 +111,21 @@ func (c CommentModel) Get(commentID int64) (*CommentWithUser, error) {
 }
 
 func (c CommentModel) GetCommentsByPost(postID int64, filters Filter) ([]*CommentWithUser, Metadata, error) {
-	query := `
-		WITH total AS (
-			SELECT COUNT(*) AS total_count FROM comments WHERE post_id = $1
-		)
-		SELECT 
-			total.total_count,
-			c.id, c.post_id, c.user_id, c.comment, c.created_at, c.updated_at,
-			u.username, u.first_name, u.last_name
-		FROM comments c
-		INNER JOIN users u ON c.user_id = u.id
-		CROSS JOIN total
-		WHERE c.post_id = $1
-		ORDER BY c.created_at DESC
-		LIMIT $2 OFFSET $3;
-	`
+	query := fmt.Sprintf(`
+			WITH total AS (
+				SELECT COUNT(*) AS total_count FROM comments WHERE post_id = $1
+			)
+			SELECT 
+				total.total_count,
+				c.id, c.post_id, c.user_id, c.comment, c.created_at, c.updated_at,
+				u.username, u.first_name, u.last_name
+			FROM comments c
+			INNER JOIN users u ON c.user_id = u.id
+			CROSS JOIN total
+			WHERE c.post_id = $1
+			ORDER BY c.created_at %s
+			LIMIT $2 OFFSET $3;
+		`, filters.sort())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

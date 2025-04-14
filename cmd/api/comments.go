@@ -107,6 +107,13 @@ func (app *Application) getCommentsByPostHandler(w http.ResponseWriter, r *http.
 
 	pageSize := app.readInt(qs, "pageSize", 10, v)
 	page := app.readInt(qs, "page", 1, v)
+	sort := qs.Get("sort")
+
+	if sort == "" {
+		input.Filter.Sort = "DESC"
+	} else {
+		input.Filter.Sort = sort
+	}
 
 	input.PostID = postID
 	input.Filter.Page = page
